@@ -5,6 +5,11 @@ $user_dir = 'user_data/' . $username . '/';
 $error = '';
 $success = '';
 
+// Benutzerverzeichnis sicherstellen
+if (!is_dir($user_dir)) {
+    mkdir($user_dir, 0777, true);
+}
+
 // Speicherlimit abrufen
 $stmt = $pdo->prepare("SELECT storage_limit FROM users WHERE id = ?");
 $stmt->execute(array($user_id));
@@ -17,6 +22,27 @@ $stmt->execute(array($user_id));
 $storage_usage = $stmt->fetch();
 $current_usage_bytes = isset($storage_usage['total_size']) ? $storage_usage['total_size'] : 0;
 $current_usage_mb = round($current_usage_bytes / (1024 * 1024), 2);
+
+// Datei löschen
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
+    $file_id = intval($_POST['delete_file']);
+    $stmt = $pdo->prepare("SELECT * FROM files WHERE id = ? AND user_id = ?");
+    $stmt->execute(array($file_id, $user_id));
+    $file_to_delete = $stmt->fetch();
+
+    if ($file_to_delete) {
+        if (file_exists($file_to_delete['filepath'])) {
+            unlink($file_to_delete['filepath']);
+        }
+        $stmt = $pdo->prepare("DELETE FROM files WHERE id = ? AND user_id = ?");
+        $stmt->execute(array($file_id, $user_id));
+        $current_usage_bytes -= $file_to_delete['filesize'];
+        $current_usage_mb = round($current_usage_bytes / (1024 * 1024), 2);
+        $success = 'Datei erfolgreich gelöscht.';
+    } else {
+        $error = 'Datei nicht gefunden oder keine Berechtigung.';
+    }
+}
 
 // Datei-Upload verarbeiten
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
@@ -93,6 +119,10 @@ $files = $stmt->fetchAll();
                         </div>
                         <div>
                             <a href="<?php echo htmlspecialchars($file['filepath']); ?>" download style="color: var(--primary-color); text-decoration: none;">Download</a>
+                            <form action="index.php?page=dashboard" method="POST" style="display: inline; margin-left: 0.5rem;">
+                                <input type="hidden" name="delete_file" value="<?php echo intval($file['id']); ?>">
+                                <button type="submit" onclick="return confirm('Datei wirklich löschen?');" style="background: var(--error-color); padding: 0.3rem 0.7rem; width: auto; font-size: 0.85rem;">Löschen</button>
+                            </form>
                         </div>
                     </div>
                 <?php endforeach; ?>

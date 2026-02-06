@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 // Alle freigegebenen Ordner anderer User abrufen
-$stmt = $pdo->prepare("SELECT username, shared_path FROM users WHERE shared_path IS NOT NULL AND id != ?");
+$stmt = $pdo->prepare("SELECT username, shared_path FROM users WHERE shared_path IS NOT NULL AND shared_path != '' AND id != ?");
 $stmt->execute(array($user_id));
 $shared_folders = $stmt->fetchAll();
 ?>

@@ -9,6 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($username) || empty($password)) {
         $error = 'Bitte alle Felder ausfüllen.';
+    } elseif (!preg_match('/^[a-zA-Z0-9_]{3,50}$/', $username)) {
+        $error = 'Benutzername darf nur Buchstaben, Zahlen und Unterstriche enthalten (3-50 Zeichen).';
     } elseif ($password !== $password_confirm) {
         $error = 'Passwörter stimmen nicht überein.';
     } elseif (strlen($password) < 8) {

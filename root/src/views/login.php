@@ -1,8 +1,10 @@
 <?php
 $error = '';
+$login_username = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim($_POST['username']);
+    $login_username = $username;
     $password = $_POST['password'];
 
     if (empty($username) || empty($password)) {
@@ -32,7 +34,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <form action="index.php?page=login" method="POST">
         <div class="form-group">
             <label for="username">Benutzername</label>
-            <input type="text" id="username" name="username" required>
+            <input type="text" id="username" name="username" value="<?php echo htmlspecialchars($login_username); ?>" required>
         </div>
         <div class="form-group">
             <label for="password">Passwort</label>

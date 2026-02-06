@@ -9,6 +9,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($username) || empty($password)) {
         $error = 'Bitte alle Felder ausfüllen.';
+    } elseif (!preg_match('/^[a-zA-Z0-9_]{3,50}$/', $username)) {
+        $error = 'Benutzername darf nur Buchstaben, Zahlen und Unterstriche enthalten (3-50 Zeichen).';
     } elseif ($password !== $password_confirm) {
         $error = 'Passwörter stimmen nicht überein.';
     } elseif (strlen($password) < 8) {
@@ -27,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Ordner für User erstellen
                 $user_dir = 'user_data/' . $username;
                 if (!is_dir($user_dir)) {
-                    mkdir($user_dir, 0777, true);
+                    mkdir($user_dir, 0750, true);
                 }
                 $success = 'Registrierung erfolgreich! Sie können sich nun einloggen.';
             } else {

@@ -7,7 +7,7 @@ $success = '';
 
 // Benutzerverzeichnis sicherstellen
 if (!is_dir($user_dir)) {
-    mkdir($user_dir, 0777, true);
+    mkdir($user_dir, 0750, true);
 }
 
 // Speicherlimit abrufen

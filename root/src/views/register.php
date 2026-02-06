@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Ordner für User erstellen
                 $user_dir = 'user_data/' . $username;
                 if (!is_dir($user_dir)) {
-                    mkdir($user_dir, 0777, true);
+                    mkdir($user_dir, 0750, true);
                 }
                 $success = 'Registrierung erfolgreich! Sie können sich nun einloggen.';
             } else {

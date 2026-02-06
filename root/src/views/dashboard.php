@@ -44,31 +44,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_file'])) {
     }
 }
 
-// Datei-Upload verarbeiten
+// Datei-Upload verarbeiten (mehrere Dateien möglich)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
-    $file = $_FILES['file_upload'];
-    $filename = basename($file['name']);
-    $filesize = $file['size'];
-    $target_file = $user_dir . $filename;
+    $uploaded_count = 0;
+    $errors = array();
+    $file_count = count($_FILES['file_upload']['name']);
+    $batch_filenames = array();
 
-    // Validierung
-    if ($file['error'] !== UPLOAD_ERR_OK) {
-        $error = 'Fehler beim Upload.';
-    } elseif (($current_usage_bytes + $filesize) > ($storage_limit_mb * 1024 * 1024)) {
-        $error = 'Speicherlimit überschritten! Limit: ' . $storage_limit_mb . ' MB.';
-    } elseif (file_exists($target_file)) {
-        $error = 'Eine Datei mit diesem Namen existiert bereits.';
-    } else {
-        if (move_uploaded_file($file['tmp_name'], $target_file)) {
-            $stmt = $pdo->prepare("INSERT INTO files (user_id, filename, filepath, filesize) VALUES (?, ?, ?, ?)");
-            $stmt->execute(array($user_id, $filename, $target_file, $filesize));
-            $success = 'Datei erfolgreich hochgeladen.';
-            // Usage aktualisieren
-            $current_usage_bytes += $filesize;
-            $current_usage_mb = round($current_usage_bytes / (1024 * 1024), 2);
+    for ($i = 0; $i < $file_count; $i++) {
+        $filename = basename($_FILES['file_upload']['name'][$i]);
+        $filesize = $_FILES['file_upload']['size'][$i];
+        $tmp_name = $_FILES['file_upload']['tmp_name'][$i];
+        $file_error = $_FILES['file_upload']['error'][$i];
+        $target_file = $user_dir . $filename;
+
+        // Validierung
+        if ($file_error !== UPLOAD_ERR_OK) {
+            $errors[] = htmlspecialchars($filename) . ': Fehler beim Upload.';
+        } elseif (($current_usage_bytes + $filesize) > ($storage_limit_mb * 1024 * 1024)) {
+            $errors[] = htmlspecialchars($filename) . ': Speicherlimit überschritten! Limit: ' . $storage_limit_mb . ' MB.';
+        } elseif (file_exists($target_file) || in_array($filename, $batch_filenames)) {
+            $errors[] = htmlspecialchars($filename) . ': Eine Datei mit diesem Namen existiert bereits.';
         } else {
-            $error = 'Fehler beim Speichern der Datei.';
+            if (move_uploaded_file($tmp_name, $target_file)) {
+                $stmt = $pdo->prepare("INSERT INTO files (user_id, filename, filepath, filesize) VALUES (?, ?, ?, ?)");
+                $stmt->execute(array($user_id, $filename, $target_file, $filesize));
+                $uploaded_count++;
+                $batch_filenames[] = $filename;
+                $current_usage_bytes += $filesize;
+                $current_usage_mb = round($current_usage_bytes / (1024 * 1024), 2);
+            } else {
+                $errors[] = htmlspecialchars($filename) . ': Fehler beim Speichern der Datei.';
+            }
         }
+    }
+
+    if ($uploaded_count > 0) {
+        $success = $uploaded_count . ' Datei(en) erfolgreich hochgeladen.';
+    }
+    if (!empty($errors)) {
+        $error = implode('<br>', $errors);
     }
 }
 
@@ -98,7 +113,7 @@ $files = $stmt->fetchAll();
 
             <form action="index.php?page=dashboard" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
-                    <input type="file" name="file_upload" required>
+                    <input type="file" name="file_upload[]" multiple required>
                 </div>
                 <button type="submit">Hochladen</button>
             </form>

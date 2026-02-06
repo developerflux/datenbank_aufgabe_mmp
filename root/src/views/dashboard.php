@@ -1,0 +1,102 @@
+<?php
+$user_id = $_SESSION['user_id'];
+$username = $_SESSION['username'];
+$user_dir = 'user_data/' . $username . '/';
+$error = '';
+$success = '';
+
+// Speicherlimit abrufen
+$stmt = $pdo->prepare("SELECT storage_limit FROM users WHERE id = ?");
+$stmt->execute(array($user_id));
+$user_info = $stmt->fetch();
+$storage_limit_mb = $user_info['storage_limit'];
+
+// Aktuellen Speicherverbrauch berechnen
+$stmt = $pdo->prepare("SELECT SUM(filesize) as total_size FROM files WHERE user_id = ?");
+$stmt->execute(array($user_id));
+$storage_usage = $stmt->fetch();
+$current_usage_bytes = isset($storage_usage['total_size']) ? $storage_usage['total_size'] : 0;
+$current_usage_mb = round($current_usage_bytes / (1024 * 1024), 2);
+
+// Datei-Upload verarbeiten
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['file_upload'])) {
+    $file = $_FILES['file_upload'];
+    $filename = basename($file['name']);
+    $filesize = $file['size'];
+    $target_file = $user_dir . $filename;
+
+    // Validierung
+    if ($file['error'] !== UPLOAD_ERR_OK) {
+        $error = 'Fehler beim Upload.';
+    } elseif (($current_usage_bytes + $filesize) > ($storage_limit_mb * 1024 * 1024)) {
+        $error = 'Speicherlimit überschritten! Limit: ' . $storage_limit_mb . ' MB.';
+    } elseif (file_exists($target_file)) {
+        $error = 'Eine Datei mit diesem Namen existiert bereits.';
+    } else {
+        if (move_uploaded_file($file['tmp_name'], $target_file)) {
+            $stmt = $pdo->prepare("INSERT INTO files (user_id, filename, filepath, filesize) VALUES (?, ?, ?, ?)");
+            $stmt->execute(array($user_id, $filename, $target_file, $filesize));
+            $success = 'Datei erfolgreich hochgeladen.';
+            // Usage aktualisieren
+            $current_usage_bytes += $filesize;
+            $current_usage_mb = round($current_usage_bytes / (1024 * 1024), 2);
+        } else {
+            $error = 'Fehler beim Speichern der Datei.';
+        }
+    }
+}
+
+// Dateien des Users abrufen
+$stmt = $pdo->prepare("SELECT * FROM files WHERE user_id = ? ORDER BY upload_date DESC");
+$stmt->execute(array($user_id));
+$files = $stmt->fetchAll();
+?>
+
+<h2>Mein Dashboard</h2>
+
+<div style="display: grid; grid-template-columns: 1fr 2fr; gap: 2rem;">
+    <section>
+        <div class="form-container" style="margin: 0; max-width: none;">
+            <h3>Datei hochladen</h3>
+            <p>Speicherverbrauch: <?php echo $current_usage_mb; ?> / <?php echo $storage_limit_mb; ?> MB</p>
+            <div style="background: #eee; height: 10px; border-radius: 5px; margin-bottom: 1rem;">
+                <div style="background: var(--primary-color); height: 100%; width: <?php echo min(100, ($storage_limit_mb > 0 ? ($current_usage_mb / $storage_limit_mb) * 100 : 0)); ?>%; border-radius: 5px;"></div>
+            </div>
+
+            <?php if ($error): ?>
+                <div class="alert alert-error"><?php echo $error; ?></div>
+            <?php endif; ?>
+            <?php if ($success): ?>
+                <div class="alert alert-success"><?php echo $success; ?></div>
+            <?php endif; ?>
+
+            <form action="index.php?page=dashboard" method="POST" enctype="multipart/form-data">
+                <div class="form-group">
+                    <input type="file" name="file_upload" required>
+                </div>
+                <button type="submit">Hochladen</button>
+            </form>
+        </div>
+    </section>
+
+    <section>
+        <div class="file-list">
+            <h3>Meine Dateien</h3>
+            <?php if (empty($files)): ?>
+                <p>Noch keine Dateien hochgeladen.</p>
+            <?php else: ?>
+                <?php foreach ($files as $file): ?>
+                    <div class="file-item">
+                        <div>
+                            <strong><?php echo htmlspecialchars($file['filename']); ?></strong><br>
+                            <small><?php echo round($file['filesize'] / 1024, 2); ?> KB | <?php echo $file['upload_date']; ?></small>
+                        </div>
+                        <div>
+                            <a href="<?php echo htmlspecialchars($file['filepath']); ?>" download style="color: var(--primary-color); text-decoration: none;">Download</a>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            <?php endif; ?>
+        </div>
+    </section>
+</div>

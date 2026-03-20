@@ -43,15 +43,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if (empty($errors)) {
         $hash = password_hash($password, PASSWORD_BCRYPT);
-        $stmt = getDB()->prepare(
-            'INSERT INTO users (username, password_hash) VALUES (?, ?)'
-        );
-        $stmt->execute([$username, $hash]);
+        try {
+            $stmt = getDB()->prepare(
+                'INSERT INTO users (username, password_hash) VALUES (?, ?)'
+            );
+            $stmt->execute([$username, $hash]);
 
-        // Verzeichnis anlegen
-        getUserUploadDir((int)getDB()->lastInsertId());
+            // Verzeichnis anlegen
+            getUserUploadDir((int)getDB()->lastInsertId());
 
-        $success = true;
+            $success = true;
+        } catch (Exception $e) {
+            $errors[] = 'Registrierung fehlgeschlagen. Bitte versuche es später erneut.';
+        }
     }
 }
 

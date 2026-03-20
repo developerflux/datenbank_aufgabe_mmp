@@ -26,7 +26,8 @@ if (!is_file($filePath)) {
 $mimeType = $file['mime_type'] ?: 'application/octet-stream';
 
 header('Content-Type: ' . $mimeType);
-header('Content-Disposition: attachment; filename="' . str_replace('"', '\\"', $file['original_name']) . '"');
+$safeFilename = preg_replace('/[\x00-\x1f\x7f"\\\\]/', '_', $file['original_name']);
+header('Content-Disposition: attachment; filename="' . $safeFilename . '"; filename*=UTF-8\'\'' . rawurlencode($file['original_name']));
 header('Content-Length: ' . filesize($filePath));
 header('Cache-Control: no-store');
 readfile($filePath);

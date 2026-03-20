@@ -57,7 +57,8 @@ if (!move_uploaded_file($file['tmp_name'], $targetPath)) {
 }
 
 // MIME-Typ vor dem Speichern der DB-Einträge ermitteln
-$mimeType = mime_content_type($targetPath) ?: 'application/octet-stream';
+$finfo    = new finfo(FILEINFO_MIME_TYPE);
+$mimeType = $finfo->file($targetPath) ?: 'application/octet-stream';
 
 // Datenbank aktualisieren
 $db = getDB();

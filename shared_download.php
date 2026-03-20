@@ -41,10 +41,12 @@ if ($realFilePath === false
     exit('Zugriff verweigert.');
 }
 
-$mimeType = mime_content_type($realFilePath) ?: 'application/octet-stream';
+$finfo    = new finfo(FILEINFO_MIME_TYPE);
+$mimeType = $finfo->file($realFilePath) ?: 'application/octet-stream';
 
 header('Content-Type: ' . $mimeType);
-header('Content-Disposition: attachment; filename="' . str_replace('"', '\\"', $fileName) . '"');
+$safeFilename = preg_replace('/[\x00-\x1f\x7f"\\\\]/', '_', $fileName);
+header('Content-Disposition: attachment; filename="' . $safeFilename . '"; filename*=UTF-8\'\'' . rawurlencode($fileName));
 header('Content-Length: ' . filesize($realFilePath));
 header('Cache-Control: no-store');
 readfile($realFilePath);

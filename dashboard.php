@@ -65,6 +65,9 @@ renderHeader('Meine Dateien');
 <!-- Dateiliste -->
 <div class="card">
     <h2>📄 Vorhandene Dateien</h2>
+    <?php if (isset($_GET['delete']) && $_GET['delete'] !== 'ok'): ?>
+        <div class="alert alert-error"><?= htmlspecialchars(urldecode($_GET['msg'] ?? 'Fehler beim Löschen.')) ?></div>
+    <?php endif; ?>
     <?php if (empty($files)): ?>
         <div class="empty-state">
             <div class="icon">📭</div>

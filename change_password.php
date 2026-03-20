@@ -21,7 +21,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $user = getUserById($userId);
 
     // Aktuelles Passwort prüfen
-    if (!password_verify($current, $user['password_hash'])) {
+    if ($user === null || !password_verify($current, $user['password_hash'])) {
         $errors[] = 'Das aktuelle Passwort ist falsch.';
     }
 

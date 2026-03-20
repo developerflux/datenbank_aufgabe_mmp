@@ -21,5 +21,6 @@ CREATE TABLE IF NOT EXISTS files (
     file_size BIGINT NOT NULL,
     mime_type VARCHAR(100) DEFAULT NULL,
     uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    INDEX idx_files_user_id (user_id)
 ) ENGINE=InnoDB;

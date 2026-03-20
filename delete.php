@@ -31,7 +31,7 @@ try {
     $db->commit();
 } catch (Exception $e) {
     $db->rollBack();
-    header('Location: /dashboard.php?upload=fail&msg=' . urlencode('Fehler beim Löschen.'));
+    header('Location: /dashboard.php?delete=fail&msg=' . urlencode('Fehler beim Löschen.'));
     exit;
 }
 

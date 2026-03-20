@@ -25,8 +25,12 @@ if ($sharedFolder === '') {
 }
 
 // Pfad validieren: Darf nicht auf übergeordnete Verzeichnisse zugreifen
-if (strpos($sharedFolder, '..') !== false || strpos($sharedFolder, '/') === 0) {
-    $msg = urlencode('Ungültiger Pfad. Keine ".." oder absolute Pfade erlaubt.');
+if (strpos($sharedFolder, '..') !== false
+    || strpos($sharedFolder, '/') === 0
+    || strpos($sharedFolder, '\\') !== false
+    || strlen($sharedFolder) > 200
+) {
+    $msg = urlencode('Ungültiger Pfad. Keine "..", absolute Pfade, Backslashes oder überlange Pfade erlaubt.');
     header("Location: /dashboard.php?share=fail&msg={$msg}");
     exit;
 }
